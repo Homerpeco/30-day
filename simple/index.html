@@ -74,7 +74,7 @@
   .card { border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
   .card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
   .card-name { font-size: 13px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
-  .pattern { font-size: 20px; font-weight: 800; }
+  .pattern { margin: 0; font-size: 20px; font-weight: 800; }
   .stitle { margin: -4px 0 0; font-size: 14px; font-weight: 700; color: var(--accent); }
   .blocks { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px 6px; }
   .block { display: inline-flex; flex-direction: column; gap: 4px; }
@@ -90,6 +90,18 @@
   .t-zu       { background: #fee2e2; color: #7f1d1d; }
   .t-ende     { background: #fee2e2; color: #7f1d1d; }
   .t-haupt    { background: #eef0f5; color: #2b3040; }
+  .tag { font-size: 12px; font-weight: 700; color: var(--accent); background: #eef0ff; padding: 2px 10px; border-radius: 999px; }
+  .types { display: flex; flex-direction: column; gap: 10px; }
+  .typ { display: flex; align-items: flex-start; gap: 12px; }
+  .typ-chip { flex: none; padding: 4px 10px; border-radius: 8px; font-size: 13px; font-weight: 800; }
+  .typ-text strong { font-size: 15px; }
+  .typ-text .rule { margin: 2px 0 0; }
+  .typ1 { background: #ede9fe; color: #4c1d95; }
+  .typ2 { background: #fee2e2; color: #7f1d1d; }
+  .typ3 { background: #dbeafe; color: #1e3a8a; }
+  .typ4 { background: #ccfbf1; color: #0f4c47; }
+  .typ5 { background: #dcfce7; color: #14532d; }
+  .typ6 { background: #eef0f5; color: #2b3040; }
   .rule { margin: 0; font-size: 15px; color: var(--muted); }
   .example { margin: 0; font-size: 18px; }
   .example mark { background: #dbeafe; color: #1e3a8a; padding: 0 4px; border-radius: 4px; font-weight: 700; }
@@ -153,210 +165,12 @@
 
 </div>
 
+<script src="../data.js"></script>
 <script>
-/* ------------------------------------------------------------------
-   WOCHEN: Titel und Regel der Strukturen. Die Aufnahmedauer (1 bis 5 Minuten) wählst du im Aufnahmebalken.
-------------------------------------------------------------------- */
-var WEEKS = {
-  1: { von: 1,  bis: 7,
-       titelA: "Einstieg + Verb an Position 2",
-       regelA: "Nach dem Einstieg kommt sofort das konjugierte Verb, dann das Subjekt. Partizip oder Infinitiv gehen ans Ende.",
-       titelB: "Verb am Ende (weil / dass)",
-       regelB: "Nach „weil“ oder „dass“ steht das konjugierte Verb ganz am Ende. Perfekt: … gemacht habe. Modal: … arbeiten möchte." },
-  2: { von: 8,  bis: 14,
-       titelA: "Modalverb + Infinitiv am Ende",
-       regelA: "Das Modalverb steht auf Position 2, der Infinitiv ganz am Ende. Mit Einstieg: Modalverb vor dem Subjekt.",
-       titelB: "Nebensatz vorn + Verb direkt danach",
-       regelB: "Steht der Nebensatz vorn, ist er Position 1. Direkt nach dem Komma folgt das Verb des Hauptsatzes, danach das Subjekt." },
-  3: { von: 15, bis: 21,
-       titelA: "Perfekt: Partizip am Ende",
-       regelA: "Das Hilfsverb (haben oder sein) steht auf Position 2, das Partizip ganz am Ende.",
-       titelB: "Relativsatz: Verb am Ende",
-       regelB: "Das Relativpronomen (der / die / das / den) richtet sich nach dem Bezugswort. Das konjugierte Verb steht am Ende." },
-  4: { von: 22, bis: 30,
-       titelA: "zu + Infinitiv / um … zu",
-       regelA: "Der Infinitiv mit „zu“ steht am Ende. Bei trennbaren Verben steht „zu“ in der Mitte: anzufangen. „um … zu“ nennt den Zweck.",
-       titelB: "Konjunktiv II: würde + Infinitiv",
-       regelB: "Konjunktiv II klingt höflich und vorsichtig: würde + Infinitiv am Ende. Auch möglich: hätte, wäre, könnte." }
-};
-
-/* Bausteine für die Sätze: [Text, Typ, optionales Label] */
-var LABELS = { einstieg: "Einstieg", verb: "Verb (Pos. 2)", subjekt: "Subjekt", rest: "Rest", konj: "Konjunktion",
-               haupt: "Hauptsatz", ende: "Verb am Ende", rel: "Relativpronomen", zu: "zu + Infinitiv" };
-var E = function (t) { return [t, "einstieg"]; };
-var V = function (t, l) { return [t, "verb", l]; };
-var S = function (t) { return [t, "subjekt"]; };
-var R = function (t) { return [t, "rest"]; };
-var K = function (t) { return [t, "konj"]; };
-var H = function (t) { return [t, "haupt"]; };
-var D = function (t, l) { return [t, "ende", l]; };
-var Rel = function (t) { return [t, "rel"]; };
-var Z = function (t) { return [t, "zu"]; };
-var C = [",", ","];
-var MOD = "Modalverb (Pos. 2)", INF = "Infinitiv am Ende", AUX = "Hilfsverb (Pos. 2)", PART = "Partizip am Ende",
-    NACH = "Verb direkt nach dem Komma", TREN = "Trennbarer Teil am Ende";
-
-/* ------------------------------------------------------------------
-   INHALT: ein Eintrag pro Tag (Tag 1 = erster Eintrag).
-   q = Interviewfrage, t = Thema, a = Satz A [Muster, Bausteine], b = Satz B, w = Wortverbindung
-   [Phrase, Beispielsatz, markierter Teil, Regel]
-------------------------------------------------------------------- */
-var DAYS = [
-/* ===== Woche 1 ===== */
-{ q: "Wie organisieren und priorisieren Sie Ihren Arbeitstag?", t: "Arbeitstag organisieren",
-  a: ["Normalerweise mache ich …", [E("Normalerweise"), V("beginne"), S("ich"), R("den Tag mit einer kurzen Planung.")]],
-  b: ["Ich mache …, weil …", [H("Ich mache jeden Morgen eine To-do-Liste"), C, K("weil"), S("ich"), R("so den Überblick"), D("behalte.")]],
-  w: ["am frühen Morgen", "Am frühen Morgen lese ich zuerst die dringenden E-Mails.", "Am frühen Morgen", "„am“ = an dem (Dativ), deshalb endet das Adjektiv auf -en."] },
-
-{ q: "Stellen Sie sich bitte kurz vor.", t: "Sich vorstellen",
-  a: ["Seit … arbeite ich …", [E("Seit mehreren Jahren"), V("arbeite"), S("ich"), R("in der Koordination und im Kundenservice.")]],
-  b: ["Ich …, weil ich …", [H("Ich bewerbe mich bei Ihnen"), C, K("weil"), S("ich"), R("gern mit Kunden"), D("arbeite.")]],
-  w: ["sich interessieren für", "Ich interessiere mich für Prozesse und Organisation.", "interessiere mich für", "„sich interessieren für“ + Akkusativ: für Prozesse."] },
-
-{ q: "Warum möchten Sie bei uns arbeiten?", t: "Motivation für die Stelle",
-  a: ["Besonders … finde ich …", [E("Besonders interessant"), V("finde"), S("ich"), R("die Vielfalt der Aufgaben.")]],
-  b: ["Ich möchte …, weil …", [H("Ich möchte bei Ihnen arbeiten"), C, K("weil"), S("Ihr Unternehmen"), R("international tätig"), D("ist.")]],
-  w: ["Wert legen auf", "Ich lege großen Wert auf eine klare Kommunikation.", "lege großen Wert auf", "„Wert legen auf“ + Akkusativ: auf eine klare Kommunikation (f. = eine)."] },
-
-{ q: "Was sind Ihre größten Stärken?", t: "Stärken",
-  a: ["Im Alltag bleibe ich …", [E("Im Alltag"), V("bleibe"), S("ich"), R("auch bei Stress ruhig.")]],
-  b: ["Meine Stärke ist, dass …", [H("Meine größte Stärke ist"), C, K("dass"), S("ich"), R("Aufgaben zuverlässig zu Ende"), D("bringe.")]],
-  w: ["sich verlassen auf", "Meine Kollegen können sich auf mich verlassen.", "sich auf mich verlassen", "„sich verlassen auf“ + Akkusativ: auf mich."] },
-
-{ q: "Was ist Ihre größte Schwäche?", t: "Schwächen",
-  a: ["Manchmal brauche ich …", [E("Manchmal"), V("brauche"), S("ich"), R("etwas mehr Zeit für Details.")]],
-  b: ["Ich arbeite daran, weil …", [H("Ich arbeite daran"), C, K("weil"), S("ich"), R("Aufgaben schneller erledigen"), D("möchte.")]],
-  w: ["arbeiten an", "Ich arbeite an meiner Organisation und an klaren Prioritäten.", "arbeite an", "„arbeiten an“ + Dativ: an meiner Organisation, an klaren Prioritäten."] },
-
-{ q: "Was haben Sie in Ihrer letzten Position gemacht?", t: "Letzte Position",
-  a: ["In … habe ich …", [E("In meiner letzten Position"), V("habe", AUX), S("ich"), R("Kunden"), D("betreut.", PART)]],
-  b: ["Ich habe …, weil …", [H("Ich habe diese Aufgaben gern gemacht"), C, K("weil"), S("ich"), R("Menschen helfen"), D("konnte.")]],
-  w: ["zuständig sein für", "Ich war für die Anmeldung und die Terminplanung zuständig.", "für die Anmeldung und die Terminplanung zuständig", "„zuständig sein für“ + Akkusativ: für die Anmeldung."] },
-
-{ q: "Wie arbeiten Sie im Team?", t: "Teamarbeit",
-  a: ["Im Team teile ich …", [E("Im Team"), V("teile"), S("ich"), R("Informationen früh.")]],
-  b: ["Ich finde es wichtig, dass …", [H("Ich finde es wichtig"), C, K("dass"), S("alle"), R("den gleichen Stand"), D("haben.")]],
-  w: ["sich austauschen mit / über", "Ich tausche mich regelmäßig mit meinen Kollegen über offene Punkte aus.", "mit meinen Kollegen über offene Punkte", "„sich austauschen“: mit + Dativ, über + Akkusativ. Trennbar: tausche … aus."] },
-
-/* ===== Woche 2 ===== */
-{ q: "Wie gehen Sie mit Konflikten im Team um?", t: "Konflikte",
-  a: ["In … kann ich …", [E("In so einer Situation"), V("kann", MOD), S("ich"), R("sachlich"), D("bleiben.", INF)]],
-  b: ["Wenn …, spreche ich …", [K("Wenn"), S("es"), R("Spannungen"), D("gibt"), C, V("spreche", NACH), S("ich"), R("zuerst direkt mit der Person.")]],
-  w: ["sich einigen auf", "Am Ende können wir uns auf eine gemeinsame Lösung einigen.", "uns auf eine gemeinsame Lösung einigen", "„sich einigen auf“ + Akkusativ: auf eine gemeinsame Lösung."] },
-
-{ q: "Wie gehen Sie mit Stress und Zeitdruck um?", t: "Stress und Zeitdruck",
-  a: ["Unter Zeitdruck muss ich …", [E("Unter Zeitdruck"), V("muss", MOD), S("ich"), R("klare Prioritäten"), D("setzen.", INF)]],
-  b: ["Wenn …, mache ich …", [K("Wenn"), S("der Druck"), D("steigt"), C, V("mache", NACH), S("ich"), R("eine kurze Pause.")]],
-  w: ["umgehen mit", "Ich gehe mit Zeitdruck ruhig und strukturiert um.", "mit Zeitdruck", "„umgehen mit“ + Dativ: mit Zeitdruck. Trennbar: gehe … um."] },
-
-{ q: "Wie gehen Sie mit schwierigen Kunden um?", t: "Schwierige Kunden",
-  a: ["Zuerst muss ich …", [E("Zuerst"), V("muss", MOD), S("ich"), R("dem Kunden"), D("zuhören.", INF)]],
-  b: ["Wenn …, bleibe ich …", [K("Wenn"), S("ein Kunde"), R("verärgert"), D("ist"), C, V("bleibe", NACH), S("ich"), R("freundlich und ruhig.")]],
-  w: ["sich entschuldigen für", "Ich entschuldige mich für die Wartezeit und biete eine Lösung an.", "mich für die Wartezeit", "„sich entschuldigen für“ + Akkusativ: für die Wartezeit."] },
-
-{ q: "Erzählen Sie von einem Fehler und was Sie daraus gelernt haben.", t: "Fehler und Lernen",
-  a: ["Damals musste ich …", [E("Damals"), V("musste", MOD), S("ich"), R("meinen Fehler schnell"), D("korrigieren.", INF)]],
-  b: ["Als …, habe ich …", [K("Als"), S("ich"), R("den Fehler"), D("bemerkt habe"), C, V("habe", NACH), S("ich"), R("sofort mein Team"), D("informiert.", PART)]],
-  w: ["lernen aus", "Aus diesem Fehler habe ich viel gelernt.", "Aus diesem Fehler", "„lernen aus“ + Dativ: aus diesem Fehler (m.)."] },
-
-{ q: "Was tun Sie, wenn mehrere Aufgaben gleichzeitig dringend sind?", t: "Mehrere dringende Aufgaben",
-  a: ["Dann kann ich …", [E("Dann"), V("kann", MOD), S("ich"), R("nur eine Aufgabe zuerst"), D("erledigen.", INF)]],
-  b: ["Wenn …, spreche ich …", [K("Wenn"), S("alles"), R("dringend"), D("ist"), C, V("spreche", NACH), S("ich"), R("mit dem Team über die Reihenfolge.")]],
-  w: ["abstimmen mit", "Ich stimme die Reihenfolge mit meiner Führungskraft ab.", "mit meiner Führungskraft", "„abstimmen mit“ + Dativ: mit meiner Führungskraft (f.). Trennbar: stimme … ab."] },
-
-{ q: "Wie koordinieren Sie die Zusammenarbeit zwischen verschiedenen Abteilungen?", t: "Koordination",
-  a: ["Dafür muss ich …", [E("Dafür"), V("muss", MOD), S("ich"), R("alle Beteiligten früh"), D("informieren.", INF)]],
-  b: ["Wenn …, lege ich …", [K("Wenn"), S("mehrere Abteilungen"), R("beteiligt"), D("sind"), C, V("lege", NACH), S("ich"), R("klare Zuständigkeiten"), D("fest.", TREN)]],
-  w: ["sich kümmern um", "Ich kümmere mich um die Termine und um die Kommunikation zwischen den Abteilungen.", "mich um die Termine", "„sich kümmern um“ + Akkusativ: um die Termine."] },
-
-{ q: "Wie schätzen Sie Ihre Deutschkenntnisse ein?", t: "Deutschkenntnisse",
-  a: ["Im Alltag kann ich …", [E("Im Alltag"), V("kann", MOD), S("ich"), R("mich gut"), D("verständigen.", INF)]],
-  b: ["Obwohl …, spreche ich …", [K("Obwohl"), S("ich"), R("fließend"), D("verstehe"), C, V("spreche", NACH), S("ich"), R("manchmal noch langsam.")]],
-  w: ["Fortschritte machen bei", "Ich mache jeden Tag Fortschritte beim Sprechen.", "beim Sprechen", "„bei“ + „dem“ = „beim“. Das Sprechen ist ein Nomen (n.)."] },
-
-/* ===== Woche 3 ===== */
-{ q: "Was haben Sie in Ihrer internationalen Berufserfahrung gelernt?", t: "Internationale Erfahrung",
-  a: ["In … habe ich …", [E("In verschiedenen Ländern"), V("habe", AUX), S("ich"), R("flexibel"), D("gearbeitet.", PART)]],
-  b: ["Ich habe …, die …", [H("Ich habe Kollegen kennengelernt"), C, Rel("die"), R("aus vielen Kulturen"), D("kommen.")]],
-  w: ["sich gewöhnen an", "Ich habe mich schnell an neue Teams gewöhnt.", "an neue Teams", "„sich gewöhnen an“ + Akkusativ: an neue Teams (Pl.)."] },
-
-{ q: "Auf welchen beruflichen Erfolg sind Sie besonders stolz?", t: "Beruflicher Erfolg",
-  a: ["Letztes Jahr habe ich …", [E("Letztes Jahr"), V("habe", AUX), S("ich"), R("einen Prozess"), D("verbessert.", PART)]],
-  b: ["Das war …, der …", [H("Das war ein Prozess"), C, Rel("der"), R("vorher viel Zeit"), D("gekostet hat.")]],
-  w: ["stolz sein auf", "Ich bin stolz auf das Ergebnis und auf die Zusammenarbeit im Team.", "stolz auf das Ergebnis", "„stolz sein auf“ + Akkusativ: auf das Ergebnis."] },
-
-{ q: "Beschreiben Sie eine schwierige Situation, die Sie gelöst haben.", t: "Schwierige Situation",
-  a: ["Vor … habe ich …", [E("Vor zwei Jahren"), V("habe", AUX), S("ich"), R("eine schwierige Situation"), D("gelöst.", PART)]],
-  b: ["Es war …, die …", [H("Es war eine Situation"), C, Rel("die"), R("schnelle Entscheidungen"), D("verlangt hat.")]],
-  w: ["sich entscheiden für", "Ich habe mich für eine klare Lösung entschieden.", "für eine klare Lösung", "„sich entscheiden für“ + Akkusativ: für eine klare Lösung."] },
-
-{ q: "Erzählen Sie von einem Projekt, das Sie koordiniert haben.", t: "Projekt",
-  a: ["Im letzten Projekt habe ich …", [E("Im letzten Projekt"), V("habe", AUX), S("ich"), R("den Zeitplan"), D("koordiniert.", PART)]],
-  b: ["Es war …, das …", [H("Es war ein Projekt"), C, Rel("das"), R("mehrere Abteilungen"), D("betroffen hat.")]],
-  w: ["teilnehmen an", "Mehrere Abteilungen haben an dem Projekt teilgenommen.", "an dem Projekt", "„teilnehmen an“ + Dativ: an dem (am) Projekt. Perfekt: haben … teilgenommen."] },
-
-{ q: "Wie übernehmen Sie Verantwortung?", t: "Verantwortung",
-  a: ["Schon früh habe ich …", [E("Schon früh"), V("habe", AUX), S("ich"), R("Verantwortung"), D("übernommen.", PART)]],
-  b: ["Ich bin jemand, der …", [H("Ich bin jemand"), C, Rel("der"), R("Aufgaben bis zum Ende"), D("begleitet.")]],
-  w: ["Verantwortung tragen für", "Ich trage Verantwortung für die Qualität meiner Arbeit.", "Verantwortung für die Qualität", "„Verantwortung tragen für“ + Akkusativ: für die Qualität (f.)."] },
-
-{ q: "Was haben Sie seit Ihrer letzten Stelle gemacht?", t: "Seit der letzten Stelle",
-  a: ["Seit Februar habe ich …", [E("Seit Februar"), V("habe", AUX), S("ich"), R("mich intensiv"), D("weitergebildet.", PART)]],
-  b: ["Ich habe …, der …", [H("Ich habe einen Kurs besucht"), C, Rel("der"), R("meine Sprachkenntnisse"), D("verbessert hat.")]],
-  w: ["sich vorbereiten auf", "Ich habe mich gezielt auf Gespräche wie dieses vorbereitet.", "mich gezielt auf Gespräche", "„sich vorbereiten auf“ + Akkusativ: auf Gespräche (Pl.)."] },
-
-{ q: "Wie halten Sie Ihr Wissen aktuell?", t: "Weiterbildung",
-  a: ["Zuletzt habe ich …", [E("Zuletzt"), V("habe", AUX), S("ich"), R("einen Online-Kurs"), D("abgeschlossen.", PART)]],
-  b: ["Das ist …, den ich …", [H("Das ist ein Kurs"), C, Rel("den"), S("ich"), R("neben der Arbeit"), D("gemacht habe.")]],
-  w: ["sich informieren über", "Ich informiere mich regelmäßig über neue Entwicklungen.", "mich regelmäßig über neue Entwicklungen", "„sich informieren über“ + Akkusativ: über neue Entwicklungen (Pl.)."] },
-
-/* ===== Woche 4 ===== */
-{ q: "Was motiviert Sie bei der Arbeit?", t: "Motivation",
-  a: ["Mich motiviert es, … zu …", [H("Mich motiviert es"), C, R("Probleme"), Z("zu lösen.")]],
-  b: ["Ich würde gern …", [S("Ich"), V("würde", "würde (Pos. 2)"), R("gern an klaren Zielen"), D("arbeiten.", INF)]],
-  w: ["sich freuen über", "Ich freue mich über positives Feedback und über neue Aufgaben.", "mich über positives Feedback", "„sich freuen über“ + Akkusativ (etwas, das da ist). „sich freuen auf“ gilt für die Zukunft."] },
-
-{ q: "Wo sehen Sie sich in fünf Jahren?", t: "Ziele",
-  a: ["Mein Ziel ist es, … zu …", [H("Mein Ziel ist es"), C, R("in fünf Jahren ein Team"), Z("zu koordinieren.")]],
-  b: ["Ich würde gern …", [S("Ich"), V("würde", "würde (Pos. 2)"), R("gern mehr Verantwortung"), D("übernehmen.", INF)]],
-  w: ["hinarbeiten auf", "Ich arbeite auf eine Koordinationsrolle hin.", "auf eine Koordinationsrolle hin", "„hinarbeiten auf“ + Akkusativ: auf eine Koordinationsrolle (f.). Trennbar: arbeite … hin."] },
-
-{ q: "Wie gehen Sie mit Veränderungen im Unternehmen um?", t: "Veränderungen",
-  a: ["Ich versuche, … zu …", [H("Ich versuche"), C, R("Veränderungen als Chance"), Z("zu sehen.")]],
-  b: ["Ich würde …, was …", [S("Ich"), V("würde", "würde (Pos. 2)"), R("zuerst"), D("nachfragen", INF), C, K("was"), R("sich genau"), D("ändert.")]],
-  w: ["sich einstellen auf", "Ich stelle mich schnell auf neue Abläufe ein.", "mich schnell auf neue Abläufe", "„sich einstellen auf“ + Akkusativ: auf neue Abläufe (Pl.). Trennbar: stelle … ein."] },
-
-{ q: "Wie gehen Sie mit Kritik um?", t: "Kritik und Feedback",
-  a: ["Ich bitte um Feedback, um … zu …", [H("Ich bitte um Feedback"), C, K("um"), R("mich"), Z("zu verbessern.")]],
-  b: ["Ich würde …", [S("Ich"), V("würde", "würde (Pos. 2)"), R("Kritik ernst"), D("nehmen und nachfragen.", INF)]],
-  w: ["reagieren auf", "Ich reagiere ruhig auf Kritik und frage nach Beispielen.", "auf Kritik", "„reagieren auf“ + Akkusativ: auf Kritik. „fragen nach“ + Dativ: nach Beispielen."] },
-
-{ q: "Wie hoch sind Ihre Gehaltsvorstellungen?", t: "Gehalt",
-  a: ["Meine Vorstellung ist es, … zu …", [H("Meine Vorstellung ist es"), C, R("ein faires Gehalt"), Z("zu vereinbaren.")]],
-  b: ["Ich würde gern …", [S("Ich"), V("würde", "würde (Pos. 2)"), R("gern zuerst über die Aufgaben"), D("sprechen.", INF)]],
-  w: ["sich orientieren an", "Ich orientiere mich am üblichen Gehalt für diese Position.", "mich am üblichen Gehalt", "„sich orientieren an“ + Dativ: am (an dem) üblichen Gehalt."] },
-
-{ q: "Wann könnten Sie bei uns anfangen?", t: "Verfügbarkeit",
-  a: ["Ich bin bereit, … zu …", [H("Ich bin bereit"), C, R("sofort"), Z("anzufangen.")]],
-  b: ["Ich könnte …", [S("Ich"), V("könnte", "könnte (Pos. 2)"), R("bereits im Januar bei Ihnen"), D("anfangen.", INF)]],
-  w: ["zur Verfügung stehen", "Ich stehe Ihnen ab Januar zur Verfügung.", "zur Verfügung", "„zur Verfügung stehen“ + Dativ der Person: Ihnen. „zur“ = zu der (f.)."] },
-
-{ q: "Warum sollten wir uns für Sie entscheiden?", t: "Warum Sie",
-  a: ["Mein Vorteil ist es, … zu …", [H("Mein Vorteil ist es"), C, R("schnell Prioritäten"), Z("zu erkennen.")]],
-  b: ["Ich würde …", [S("Ich"), V("würde", "würde (Pos. 2)"), R("Ihr Team mit meiner Erfahrung"), D("unterstützen.", INF)]],
-  w: ["beitragen zu", "Ich kann zu einer guten Zusammenarbeit beitragen.", "zu einer guten Zusammenarbeit", "„beitragen zu“ + Dativ: zu einer guten Zusammenarbeit (f.)."] },
-
-{ q: "Haben Sie noch Fragen an uns?", t: "Eigene Fragen",
-  a: ["Es interessiert mich, … zu …", [H("Es interessiert mich"), C, R("mehr über das Team"), Z("zu erfahren.")]],
-  b: ["Ich würde gern wissen, wie …", [S("Ich"), V("würde", "würde (Pos. 2)"), R("gern"), D("wissen", INF), C, K("wie"), S("die Einarbeitung"), D("abläuft.")]],
-  w: ["sich erkundigen nach", "Ich möchte mich nach den nächsten Schritten erkundigen.", "nach den nächsten Schritten", "„sich erkundigen nach“ + Dativ: nach den nächsten Schritten (Pl.)."] },
-
-{ q: "Möchten Sie noch etwas ergänzen?", t: "Abschluss",
-  a: ["Ich hoffe, … zu …", [H("Ich hoffe"), C, R("bald von Ihnen"), Z("zu hören.")]],
-  b: ["Ich würde mich … freuen", [S("Ich"), V("würde", "würde (Pos. 2)"), R("mich sehr über eine Zusage"), D("freuen.", INF)]],
-  w: ["sich bedanken für", "Ich bedanke mich für das nette Gespräch.", "mich für das nette Gespräch", "„sich bedanken für“ + Akkusativ: für das nette Gespräch."] }
-];
-var TOTAL = DAYS.length;
+/* Inhalt (Tag 1 bis 30) kommt aus ../data.js, dem Trainingsplan deiner App. */
+var DAYS = (window.TD && window.TD.DAYS) || [];
+var TOTAL = 30;
+var WEEKS = { 1: { von: 1, bis: 7 }, 2: { von: 8, bis: 14 }, 3: { von: 15, bis: 21 }, 4: { von: 22, bis: 30 } };
 
 /* ------------------------------------------------------------------ */
 function weekOf(day) {
@@ -420,27 +234,31 @@ function renderCal() {
 }
 
 /* ---------- Strukturen ---------- */
-function blocks(teile) {
-  var wrap = el("div", "blocks");
-  teile.forEach(function (t) {
-    if (t[1] === ",") { wrap.appendChild(el("span", "comma", ",")); return; }
-    var b = el("div", "block");
-    b.appendChild(el("span", "chip t-" + t[1], t[0]));
-    b.appendChild(el("span", "label", t[2] || LABELS[t[1]]));
-    wrap.appendChild(b);
+var TAGLABEL = { "new": "neu", "also new": "auch neu", "review": "Wiederholung", "your choice": "deine Wahl", "instruction": "Aufgabe" };
+
+function typeRows(p) {
+  var wrap = el("div", "types");
+  TD.typesOf(p).forEach(function (n) {
+    var t = TD.TYPES[n], row = el("div", "typ");
+    row.appendChild(el("span", "typ-chip typ" + n, "Typ " + n));
+    var txt = el("div", "typ-text");
+    txt.appendChild(el("strong", "", t.name));
+    txt.appendChild(el("p", "rule", t.rule));
+    row.appendChild(txt);
+    wrap.appendChild(row);
   });
   return wrap;
 }
 
-function satzCard(name, titel, regel, s) {
+function satzCard(name, s) {
   var c = el("section", "card");
   var head = el("div", "card-head");
   head.appendChild(el("span", "card-name", name));
-  head.appendChild(el("span", "pattern", s[0]));
+  if (s.tag) head.appendChild(el("span", "tag", TAGLABEL[s.tag] || s.tag));
   c.appendChild(head);
-  c.appendChild(el("p", "stitle", titel));
-  c.appendChild(blocks(s[1]));
-  c.appendChild(el("p", "rule", regel));
+  c.appendChild(el("p", "pattern", s.p));
+  c.appendChild(el("p", "example", s.ex));
+  c.appendChild(typeRows(s.p));
   return c;
 }
 
@@ -448,17 +266,19 @@ function wortCard(w) {
   var c = el("section", "card");
   var head = el("div", "card-head");
   head.appendChild(el("span", "card-name", "Wortverbindung"));
-  head.appendChild(el("span", "pattern", w[0]));
+  if (w.n === 2) head.appendChild(el("span", "tag", "2. Mal"));
   c.appendChild(head);
+  c.appendChild(el("p", "pattern", w.p));
   var p = el("p", "example");
-  var idx = w[1].indexOf(w[2]);
+  var idx = w.ex.toLowerCase().indexOf(w.p.toLowerCase());
   if (idx >= 0) {
-    p.appendChild(document.createTextNode(w[1].slice(0, idx)));
-    p.appendChild(el("mark", "", w[2]));
-    p.appendChild(document.createTextNode(w[1].slice(idx + w[2].length)));
-  } else { p.textContent = w[1]; }
+    p.appendChild(document.createTextNode(w.ex.slice(0, idx)));
+    p.appendChild(el("mark", "", w.ex.slice(idx, idx + w.p.length)));
+    p.appendChild(document.createTextNode(w.ex.slice(idx + w.p.length)));
+  } else { p.textContent = w.ex; }
   c.appendChild(p);
-  c.appendChild(el("p", "rule", w[3]));
+  var rule = TD.WV[w.p] && TD.WV[w.p].rule;
+  if (rule) c.appendChild(el("p", "rule", rule));
   return c;
 }
 
@@ -628,18 +448,21 @@ function render() {
   renderCal();
   content.textContent = "";
   var d = DAYS[current - 1];
-  var wk = weekOf(current), W = WEEKS[wk];
+  if (!d) {
+    content.appendChild(el("p", "msg err", "Die Datei data.js wurde nicht gefunden. Sie muss im Hauptordner neben dem Ordner „simple“ liegen."));
+    return;
+  }
 
   var head = el("div");
-  head.appendChild(el("p", "eyebrow", "Tag " + current + " · Woche " + wk));
-  head.appendChild(el("p", "thema", "Thema: " + d.t));
-  head.appendChild(el("h1", "", d.q));
+  head.appendChild(el("p", "eyebrow", "Tag " + current + " · Woche " + d.w));
+  head.appendChild(el("p", "thema", "Thema: " + TD.KIND_LABEL[d.kind] + (d.kind === "q" ? " #" + d.q : "")));
+  head.appendChild(el("h1", "", d.say));
   content.appendChild(head);
 
   var structs = el("div", "structs");
-  structs.appendChild(satzCard("Satz A", W.titelA, W.regelA, d.a));
-  structs.appendChild(satzCard("Satz B", W.titelB, W.regelB, d.b));
-  structs.appendChild(wortCard(d.w));
+  structs.appendChild(satzCard("Satz A", d.a));
+  structs.appendChild(satzCard("Satz B", d.b));
+  if (d.wv) structs.appendChild(wortCard(d.wv));
   content.appendChild(structs);
 
   content.appendChild(recorderPanel());
