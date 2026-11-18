@@ -1,6 +1,6 @@
 // 30-DAY service worker: the app keeps working offline.
 // Pages and scripts: network first (so updates arrive), cache as fallback. Fonts and icons: cache first. /api/* is never cached.
-const CACHE_VERSION = 'thirtyday-v1';
+const CACHE_VERSION = 'thirtyday-v2';
 const CORE = ['./', 'index.html', 'styles.css', 'data.js', 'audio.js', 'app.js', 'manifest.webmanifest', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {

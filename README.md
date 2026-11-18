@@ -4,18 +4,19 @@ A one-screen speaking studio for the 30-day challenge in "Besser sprechen in 30 
 two sentence patterns, three spoken rounds without stopping. It is a standalone app with its own repo and Vercel project,
 built the same way as MorphoDeutsch: plain HTML/JS, installable on the phone, works offline, small API routes on Vercel.
 
-## What is on the screen
-| Zone | Content |
-|---|---|
-| A · left (drawer on the phone) | progress x/30, week tabs, 30-day grid (✓ = done; orange line = PDF topic, blue = asking back, violet = mock), the week's time rule, the 7 daily steps (✓ when done), drawers for the 6 word-order types, the Challenge-Tagebuch and export |
-| B · top | TAG / WOCHE, category (Interview question #1–#9, PDF topic, Asking back, Mock interview), round time, the topic in large type, 🔊 read aloud. Cards: Satz A (emerald), Satz B (sky), Wortverbindung (amber) with model sentence, 🔊, word-order type(s) and verb rule, Dativ ending rule. Step 2: three variation slots (type or 🎙 dictate). Step 6: missing words pinned on screen |
-| C · middle | beep timer (start 660→880 Hz, ticks 520 Hz in the last 5 s, end chord D5–G5–C6), strict 60 s lock, presets 1–5 min + slider; voice studio with waveform, >3 s pause alert and counter, room-noise measurement, takes with 0.85×/1×/1.25×, download, transcript and pattern check |
-| D · bottom | Step 6 Wortlücken (concept → German, 🔁 run repeat round); Step 7 diary (time reached with "Use longest round", 2–3 unsure sentences, ✨ copy AI correction prompt, the three diary questions, mark day complete) |
-| Day 30 | most-repeated patterns from "Was möchte ich wiederholen?", mock interview (9 questions, random order, 2 min each), 3-minute final check, Day 1 vs Day 30 players and diary figures |
-
-Clicking a step loads its time (warm-up always 60 s, steps 2 and 7 two minutes, rounds = the week's round time) and
-highlights the cards it uses. Recording starts 350 ms after the start beep and stops 50 ms before the end chime.
-After steps 1–4 the next step is selected automatically.
+## What is on the screen (v2, 18 Nov 2026: simplified)
+One column, the same on the Mac and the phone, modeled on a "3 steps" study card:
+- **Header:** ‹ Tag x / 30 › (tap the middle for all 30 days) and the ⋯ menu.
+- **Topic:** the day's question in large type, 🔊 Listen, category chip.
+- **Tabs:** 01 Satz A · 02 Satz B · 03 Kombinieren (Day 30: Probe-Interview · Final check). ✓ when recorded.
+- **Sentence structure:** the pattern with its fixed words highlighted and gaps to fill, plus the word-order rule.
+- **Build your sentences:** the model sentence with the pattern words highlighted (🔊), your own sentences (Satz A tab),
+  both examples + Wortverbindung with its Dativ ending and your missing words (Kombinieren tab).
+- **Record button:** start beep → records the round time with a countdown ring → end chime. >3 s pause alert.
+  Last take below it: ▶ play, pauses, ✓ structures heard (Gemini checks after the take). After a full round the next tab opens.
+- **⋯ menu:** warm-up 60 s, diary & AI correction prompt & mark day done, missing words, recordings (speed, download,
+  transcript, Day 1 recordings on Day 30), all 30 days, the 6 word-order types, settings (round time, ticks, transcripts,
+  room noise, sync password), export & backup.
 
 ## Data
 - `data.js`: all 30 days copied verbatim from the training plan, the 6 word-order types, the type(s) of every pattern,
@@ -27,7 +28,7 @@ After steps 1–4 the next step is selected automatically.
 
 ## Storage and sync
 - Browser: `localStorage` key **`thirtyday_v1`** (never rename): per day variations, missing words, diary, done flag, `updatedAt`; settings.
-  View state: `thirtyday_ui`. Sync password: `thirtyday_sync_key`. Room noise: `thirtyday_noise`.
+  View state: `thirtyday_ui2`. Sync password: `thirtyday_sync_key`. Room noise: `thirtyday_noise`.
 - Recordings, their transcripts and cached voice clips: IndexedDB database `thirtyday` (stores `takes`, `tts`), per device.
   They are **not** synced; download a take with ⬇ to keep it. The app asks the browser for persistent storage.
 - Cloud: `GET/PUT /api/progress`, one JSON document at `thirtyday/progress.json` in Vercel Blob. Merge per day, newer `updatedAt` wins.
@@ -75,9 +76,9 @@ connect a Blob store, Settings → Environment Variables → `SYNC_KEY` and `GEM
 ## Files
 | File | Role |
 |---|---|
-| `index.html`, `styles.css` | layout (4 zones, phone layout below 900 px), white palette, no italics |
+| `index.html`, `styles.css` | one-column card layout, light palette, no italics |
 | `data.js` | plan content |
 | `audio.js` | beeps, microphone, recorder, pause detector, waveform, WAV pieces, IndexedDB |
-| `app.js` | state, sync, rendering, timer, transcription, diary, Day 30 |
+| `app.js` | state, sync, card rendering, record flow, transcription, menu sheets, Day 30 |
 | `api/` | `progress.js`, `transcribe.js`, `tts.js`, `health.js`, shared `_auth.js`, `_gemini.js` |
 | `sw.js`, `manifest.webmanifest`, `icons/` | installable, offline |

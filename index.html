@@ -4,80 +4,35 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>30-DAY · Besser sprechen in 30 Tagen</title>
-<meta name="description" content="Speaking studio for the 30-day German speaking challenge: one topic a day, two sentence patterns, three spoken rounds without stopping.">
+<meta name="description" content="Speak about one topic a day with two sentence structures. Record, listen, repeat.">
 <meta name="theme-color" content="#ffffff">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" type="image/png" href="icons/icon-192.png">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header class="top">
-  <button class="icon-btn nav-toggle" id="navToggle" type="button" aria-label="Days and steps" aria-expanded="false">
-    <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
-  </button>
-  <a class="brand" href="#" id="brand" aria-label="30-DAY home">
-    <span class="brand-word">30<span class="dash">-</span>DAY</span>
-    <span class="brand-sub">Besser sprechen in 30 Tagen</span>
-  </a>
-  <div class="tools">
-    <span class="srv" id="srvBadge" hidden></span>
-    <button id="syncBtn" class="sync" type="button"></button>
-  </div>
-</header>
+<div class="app">
+  <header class="top">
+    <button type="button" class="icon" id="prevDay" aria-label="Previous day">‹</button>
+    <button type="button" class="day-pick" id="dayPick" aria-label="Choose a day"></button>
+    <button type="button" class="icon" id="nextDay" aria-label="Next day">›</button>
+    <button type="button" class="icon menu" id="menuBtn" aria-label="Menu">⋯</button>
+  </header>
 
-<div class="layout">
-  <!-- Zone A: navigator + 7 steps -->
-  <aside class="zone-a" id="zoneA" aria-label="Days and steps">
-    <div class="progress-head"><span id="progLabel">0 / 30 days</span><span id="progPct"></span></div>
-    <div class="bar"><span id="progBar"></span></div>
-    <div class="week-tabs" role="tablist" id="weekTabs"></div>
-    <div class="day-grid" id="dayGrid"></div>
-    <div class="week-box" id="weekBox"></div>
-    <h3 class="side-h">Daily routine · about 15 min</h3>
-    <ol class="steps" id="steps"></ol>
-    <div class="ref-btns">
-      <button type="button" class="btn ghost" data-drawer="types">The 6 word-order types</button>
-      <button type="button" class="btn ghost" data-drawer="diary">Challenge-Tagebuch</button>
-      <button type="button" class="btn ghost" data-drawer="data">Export · backup · settings</button>
-    </div>
-  </aside>
-  <div class="scrim" id="scrim" hidden></div>
+  <section class="thema" id="thema"></section>
+  <nav class="tabs" id="tabs" aria-label="Rounds"></nav>
+  <section class="structure" id="structure"></section>
+  <section class="build" id="build"></section>
 
-  <main id="main" tabindex="-1">
-    <!-- Zone B: theme banner + teleprompter cards -->
-    <section class="zone-b" aria-label="Topic of the day">
-      <div class="banner" id="banner"></div>
-      <div class="cards" id="cards"></div>
-      <div class="var-builder" id="varBuilder"></div>
-      <div class="pinned" id="pinned" hidden></div>
-    </section>
-
-    <div class="step-bar" id="stepBar" aria-label="Steps"></div>
-
-    <!-- Day 30 only -->
-    <section class="zone-mock" id="mock" hidden></section>
-
-    <!-- Zone C: timer + voice studio -->
-    <section class="zone-c">
-      <div class="panel timer-panel" id="timerPanel"></div>
-      <div class="panel rec-panel" id="recPanel"></div>
-    </section>
-
-    <!-- Zone D: missing words + correction & diary -->
-    <section class="zone-d">
-      <div class="panel" id="vault"></div>
-      <div class="panel" id="diary"></div>
-    </section>
-    <p class="foot">Plan: Michael's method (Deutsch Info und Training), tailored to your job interviews. Recordings stay on this device.</p>
-  </main>
+  <section class="rec" id="rec"></section>
 </div>
 
-<div class="drawer-wrap" id="drawer" hidden>
-  <div class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle"></div>
+<div class="sheet-wrap" id="sheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"></div>
 </div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <input type="file" id="importFile" accept=".json,application/json" hidden>
