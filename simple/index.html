@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>30-DAY Sprechen</title>
+<style>
+  /* Layout: one centered column. Kalender on top, then Thema, structures, one record button. */
+  :root {
+    --bg: #ffffff;
+    --ink: #14161f;
+    --muted: #5b6070;
+    --line: #e3e6ee;
+    --soft: #f5f6fa;
+    --accent: #4338ca;
+    --rec: #dc2626;
+    --done: #15803d;
+    color-scheme: light;
+  }
+  * { box-sizing: border-box; font-style: normal; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .wrap { max-width: 760px; margin: 0 auto; padding: 20px 16px 56px; display: flex; flex-direction: column; gap: 28px; }
+
+  /* Top bar: the 30-DAY title opens the Kalender */
+  .top { position: relative; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .brandbtn {
+    display: inline-flex; align-items: center; gap: 10px; padding: 6px 10px 6px 0; border: 0; background: none; cursor: pointer;
+    border-radius: 10px;
+  }
+  .brand { font-weight: 800; font-size: 22px; letter-spacing: 0.01em; }
+  .brand .dash { color: var(--accent); }
+  .cur { font-size: 14px; font-weight: 700; color: var(--accent); background: #eef0ff; padding: 3px 10px; border-radius: 999px; }
+  .chev { font-size: 12px; color: var(--muted); transition: transform 0.15s; }
+  .brandbtn[aria-expanded="true"] .chev { transform: rotate(180deg); }
+  .count { font-size: 14px; font-weight: 700; color: var(--muted); font-variant-numeric: tabular-nums; }
+
+  /* Kalender (hidden until opened, floats above the content) */
+  .cal {
+    position: absolute; top: 100%; left: 0; z-index: 10; margin-top: 6px; padding: 14px;
+    display: flex; flex-direction: column; gap: 8px;
+    background: var(--bg); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 12px 32px rgba(20, 22, 31, 0.16);
+  }
+  .cal[hidden] { display: none; }
+  .week { display: flex; align-items: center; gap: 10px; }
+  .wlabel { width: 28px; flex: none; font-size: 13px; font-weight: 800; color: var(--muted); }
+  .daysrow { display: flex; flex-wrap: wrap; gap: 6px; }
+  .day {
+    position: relative; width: 38px; height: 38px; border: 1px solid var(--line); border-radius: 9px;
+    background: var(--bg); cursor: pointer; font-weight: 700; font-size: 14px; font-variant-numeric: tabular-nums;
+  }
+  .day:hover { background: var(--soft); }
+  .day.done { border-color: var(--done); color: var(--done); }
+  .day.done::after {
+    content: ""; position: absolute; right: 4px; bottom: 4px; width: 6px; height: 6px; border-radius: 50%; background: var(--done);
+  }
+  .day.now { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .day.now.done::after { background: #fff; }
+
+  /* Thema */
+  .eyebrow { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin: 0 0 6px; }
+  h1 { margin: 0; font-size: clamp(26px, 5vw, 38px); line-height: 1.2; font-weight: 800; text-wrap: balance; }
+  .thema { margin: 0 0 8px; font-size: 15px; color: var(--muted); font-weight: 600; }
+
+  /* Structures */
+  .structs { display: flex; flex-direction: column; gap: 14px; }
+  .card { border: 1px solid var(--line); border-radius: 14px; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .card-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+  .card-name { font-size: 13px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+  .pattern { font-size: 20px; font-weight: 800; }
+  .stitle { margin: -4px 0 0; font-size: 14px; font-weight: 700; color: var(--accent); }
+  .blocks { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px 6px; }
+  .block { display: inline-flex; flex-direction: column; gap: 4px; }
+  .chip { padding: 6px 12px; border-radius: 10px; font-size: 17px; font-weight: 600; }
+  .label { font-size: 12px; color: var(--muted); padding: 0 4px; }
+  .comma { align-self: flex-start; padding-top: 6px; font-size: 17px; font-weight: 700; color: var(--muted); }
+  .t-einstieg { background: #ede9fe; color: #4c1d95; }
+  .t-verb     { background: #dbeafe; color: #1e3a8a; }
+  .t-subjekt  { background: #dcfce7; color: #14532d; }
+  .t-rest     { background: #eef0f5; color: #2b3040; }
+  .t-konj     { background: #ccfbf1; color: #0f4c47; }
+  .t-rel      { background: #ccfbf1; color: #0f4c47; }
+  .t-zu       { background: #fee2e2; color: #7f1d1d; }
+  .t-ende     { background: #fee2e2; color: #7f1d1d; }
+  .t-haupt    { background: #eef0f5; color: #2b3040; }
+  .rule { margin: 0; font-size: 15px; color: var(--muted); }
+  .example { margin: 0; font-size: 18px; }
+  .example mark { background: #dbeafe; color: #1e3a8a; padding: 0 4px; border-radius: 4px; font-weight: 700; }
+
+  /* Recorder: pinned to the bottom of the screen, so the record button never scrolls away */
+  .rec {
+    position: sticky; bottom: 12px; z-index: 5;
+    border: 1px solid var(--line); border-radius: 16px; padding: 14px 18px;
+    display: flex; flex-direction: column; align-items: stretch; gap: 10px; background: var(--soft);
+    box-shadow: 0 8px 28px rgba(20, 22, 31, 0.14);
+  }
+  .rec-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .timer { font-size: 44px; line-height: 1; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .timer.live { color: var(--rec); }
+  #recBtn {
+    display: inline-flex; align-items: center; gap: 12px; padding: 14px 28px; border: 0; border-radius: 999px;
+    background: var(--rec); color: #fff; font-size: 18px; font-weight: 700; cursor: pointer; white-space: nowrap;
+  }
+  #recBtn:hover { filter: brightness(0.94); }
+  #recBtn .dot { width: 14px; height: 14px; border-radius: 50%; background: #fff; }
+  #recBtn.live { background: var(--ink); }
+  #recBtn.live .dot { border-radius: 3px; }
+  .dur { display: flex; align-items: center; gap: 8px; }
+  .dur-label { font-size: 14px; font-weight: 600; color: var(--muted); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--bg); }
+  .seg button { min-width: 38px; padding: 6px 0; border: 0; background: var(--bg); font-weight: 700; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button[aria-pressed="true"] { background: var(--accent); color: #fff; }
+  .seg button:disabled { opacity: 0.45; cursor: default; }
+  .msg { margin: 0; font-size: 14px; color: var(--muted); }
+  .msg.err { color: #b91c1c; }
+  audio { width: 100%; height: 40px; }
+  audio[hidden] { display: none; }
+
+  @media (max-width: 520px) {
+    .timer { font-size: 38px; }
+    #recBtn { padding: 12px 20px; font-size: 17px; }
+    .rec { bottom: 8px; padding: 12px 14px; }
+    .daysrow { gap: 4px; }
+    .day { width: 31px; height: 34px; font-size: 13px; }
+  }
+  @media (prefers-reduced-motion: no-preference) {
+    #recBtn { transition: background 0.15s, filter 0.15s; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <button class="brandbtn" id="calBtn" aria-expanded="false" aria-controls="cal" aria-label="Kalender öffnen">
+      <span class="brand">30<span class="dash">-</span>DAY</span>
+      <span class="cur" id="cur"></span>
+      <span class="chev" aria-hidden="true">&#9662;</span>
+    </button>
+    <div class="count" id="count"></div>
+    <nav class="cal" id="cal" aria-label="Kalender" hidden></nav>
+  </header>
+
+  <main id="content" style="display:flex;flex-direction:column;gap:28px"></main>
+
+</div>
+
+<script>
+/* ------------------------------------------------------------------
+   WOCHEN: Titel und Regel der Strukturen. Die Aufnahmedauer (1 bis 5 Minuten) wählst du im Aufnahmebalken.
+------------------------------------------------------------------- */
+var WEEKS = {
+  1: { von: 1,  bis: 7,
+       titelA: "Einstieg + Verb an Position 2",
+       regelA: "Nach dem Einstieg kommt sofort das konjugierte Verb, dann das Subjekt. Partizip oder Infinitiv gehen ans Ende.",
+       titelB: "Verb am Ende (weil / dass)",
+       regelB: "Nach „weil“ oder „dass“ steht das konjugierte Verb ganz am Ende. Perfekt: … gemacht habe. Modal: … arbeiten möchte." },
+  2: { von: 8,  bis: 14,
+       titelA: "Modalverb + Infinitiv am Ende",
+       regelA: "Das Modalverb steht auf Position 2, der Infinitiv ganz am Ende. Mit Einstieg: Modalverb vor dem Subjekt.",
+       titelB: "Nebensatz vorn + Verb direkt danach",
+       regelB: "Steht der Nebensatz vorn, ist er Position 1. Direkt nach dem Komma folgt das Verb des Hauptsatzes, danach das Subjekt." },
+  3: { von: 15, bis: 21,
+       titelA: "Perfekt: Partizip am Ende",
+       regelA: "Das Hilfsverb (haben oder sein) steht auf Position 2, das Partizip ganz am Ende.",
+       titelB: "Relativsatz: Verb am Ende",
+       regelB: "Das Relativpronomen (der / die / das / den) richtet sich nach dem Bezugswort. Das konjugierte Verb steht am Ende." },
+  4: { von: 22, bis: 30,
+       titelA: "zu + Infinitiv / um … zu",
+       regelA: "Der Infinitiv mit „zu“ steht am Ende. Bei trennbaren Verben steht „zu“ in der Mitte: anzufangen. „um … zu“ nennt den Zweck.",
+       titelB: "Konjunktiv II: würde + Infinitiv",
+       regelB: "Konjunktiv II klingt höflich und vorsichtig: würde + Infinitiv am Ende. Auch möglich: hätte, wäre, könnte." }
+};
+
+/* Bausteine für die Sätze: [Text, Typ, optionales Label] */
+var LABELS = { einstieg: "Einstieg", verb: "Verb (Pos. 2)", subjekt: "Subjekt", rest: "Rest", konj: "Konjunktion",
+               haupt: "Hauptsatz", ende: "Verb am Ende", rel: "Relativpronomen", zu: "zu + Infinitiv" };
+var E = function (t) { return [t, "einstieg"]; };
+var V = function (t, l) { return [t, "verb", l]; };
+var S = function (t) { return [t, "subjekt"]; };
+var R = function (t) { return [t, "rest"]; };
+var K = function (t) { return [t, "konj"]; };
+var H = function (t) { return [t, "haupt"]; };
+var D = function (t, l) { return [t, "ende", l]; };
+var Rel = function (t) { return [t, "rel"]; };
+var Z = function (t) { return [t, "zu"]; };
+var C = [",", ","];
+var MOD = "Modalverb (Pos. 2)", INF = "Infinitiv am Ende", AUX = "Hilfsverb (Pos. 2)", PART = "Partizip am Ende",
+    NACH = "Verb direkt nach dem Komma", TREN = "Trennbarer Teil am Ende";
+
+/* ------------------------------------------------------------------
+   INHALT: ein Eintrag pro Tag (Tag 1 = erster Eintrag).
+   q = Interviewfrage, t = Thema, a = Satz A [Muster, Bausteine], b = Satz B, w = Wortverbindung
+   [Phrase, Beispielsatz, markierter Teil, Regel]
+------------------------------------------------------------------- */
+var DAYS = [
+/* ===== Woche 1 ===== */
+{ q: "Wie organisieren und priorisieren Sie Ihren Arbeitstag?", t: "Arbeitstag organisieren",
+  a: ["Normalerweise mache ich …", [E("Normalerweise"), V("beginne"), S("ich"), R("den Tag mit einer kurzen Planung.")]],
+  b: ["Ich mache …, weil …", [H("Ich mache jeden Morgen eine To-do-Liste"), C, K("weil"), S("ich"), R("so den Überblick"), D("behalte.")]],
+  w: ["am frühen Morgen", "Am frühen Morgen lese ich zuerst die dringenden E-Mails.", "Am frühen Morgen", "„am“ = an dem (Dativ), deshalb endet das Adjektiv auf -en."] },
+
+{ q: "Stellen Sie sich bitte kurz vor.", t: "Sich vorstellen",
+  a: ["Seit … arbeite ich …", [E("Seit mehreren Jahren"), V("arbeite"), S("ich"), R("in der Koordination und im Kundenservice.")]],
+  b: ["Ich …, weil ich …", [H("Ich bewerbe mich bei Ihnen"), C, K("weil"), S("ich"), R("gern mit Kunden"), D("arbeite.")]],
+  w: ["sich interessieren für", "Ich interessiere mich für Prozesse und Organisation.", "interessiere mich für", "„sich interessieren für“ + Akkusativ: für Prozesse."] },
+
+{ q: "Warum möchten Sie bei uns arbeiten?", t: "Motivation für die Stelle",
+  a: ["Besonders … finde ich …", [E("Besonders interessant"), V("finde"), S("ich"), R("die Vielfalt der Aufgaben.")]],
+  b: ["Ich möchte …, weil …", [H("Ich möchte bei Ihnen arbeiten"), C, K("weil"), S("Ihr Unternehmen"), R("international tätig"), D("ist.")]],
+  w: ["Wert legen auf", "Ich lege großen Wert auf eine klare Kommunikation.", "lege großen Wert auf", "„Wert legen auf“ + Akkusativ: auf eine klare Kommunikation (f. = eine)."] },
+
+{ q: "Was sind Ihre größten Stärken?", t: "Stärken",
+  a: ["Im Alltag bleibe ich …", [E("Im Alltag"), V("bleibe"), S("ich"), R("auch bei Stress ruhig.")]],
+  b: ["Meine Stärke ist, dass …", [H("Meine größte Stärke ist"), C, K("dass"), S("ich"), R("Aufgaben zuverlässig zu Ende"), D("bringe.")]],
+  w: ["sich verlassen auf", "Meine Kollegen können sich auf mich verlassen.", "sich auf mich verlassen", "„sich verlassen auf“ + Akkusativ: auf mich."] },
+
+{ q: "Was ist Ihre größte Schwäche?", t: "Schwächen",
+  a: ["Manchmal brauche ich …", [E("Manchmal"), V("brauche"), S("ich"), R("etwas mehr Zeit für Details.")]],
+  b: ["Ich arbeite daran, weil …", [H("Ich arbeite daran"), C, K("weil"), S("ich"), R("Aufgaben schneller erledigen"), D("möchte.")]],
+  w: ["arbeiten an", "Ich arbeite an meiner Organisation und an klaren Prioritäten.", "arbeite an", "„arbeiten an“ + Dativ: an meiner Organisation, an klaren Prioritäten."] },
+
+{ q: "Was haben Sie in Ihrer letzten Position gemacht?", t: "Letzte Position",
+  a: ["In … habe ich …", [E("In meiner letzten Position"), V("habe", AUX), S("ich"), R("Kunden"), D("betreut.", PART)]],
+  b: ["Ich habe …, weil …", [H("Ich habe diese Aufgaben gern gemacht"), C, K("weil"), S("ich"), R("Menschen helfen"), D("konnte.")]],
+  w: ["zuständig sein für", "Ich war für die Anmeldung und die Terminplanung zuständig.", "für die Anmeldung und die Terminplanung zuständig", "„zuständig sein für“ + Akkusativ: für die Anmeldung."] },
+
+{ q: "Wie arbeiten Sie im Team?", t: "Teamarbeit",
+  a: ["Im Team teile ich …", [E("Im Team"), V("teile"), S("ich"), R("Informationen früh.")]],
+  b: ["Ich finde es wichtig, dass …", [H("Ich finde es wichtig"), C, K("dass"), S("alle"), R("den gleichen Stand"), D("haben.")]],
+  w: ["sich austauschen mit / über", "Ich tausche mich regelmäßig mit meinen Kollegen über offene Punkte aus.", "mit meinen Kollegen über offene Punkte", "„sich austauschen“: mit + Dativ, über + Akkusativ. Trennbar: tausche … aus."] },
+
+/* ===== Woche 2 ===== */
+{ q: "Wie gehen Sie mit Konflikten im Team um?", t: "Konflikte",
+  a: ["In … kann ich …", [E("In so einer Situation"), V("kann", MOD), S("ich"), R("sachlich"), D("bleiben.", INF)]],
+  b: ["Wenn …, spreche ich …", [K("Wenn"), S("es"), R("Spannungen"), D("gibt"), C, V("spreche", NACH), S("ich"), R("zuerst direkt mit der Person.")]],
+  w: ["sich einigen auf", "Am Ende können wir uns auf eine gemeinsame Lösung einigen.", "uns auf eine gemeinsame Lösung einigen", "„sich einigen auf“ + Akkusativ: auf eine gemeinsame Lösung."] },
+
+{ q: "Wie gehen Sie mit Stress und Zeitdruck um?", t: "Stress und Zeitdruck",
+  a: ["Unter Zeitdruck muss ich …", [E("Unter Zeitdruck"), V("muss", MOD), S("ich"), R("klare Prioritäten"), D("setzen.", INF)]],
+  b: ["Wenn …, mache ich …", [K("Wenn"), S("der Druck"), D("steigt"), C, V("mache", NACH), S("ich"), R("eine kurze Pause.")]],
+  w: ["umgehen mit", "Ich gehe mit Zeitdruck ruhig und strukturiert um.", "mit Zeitdruck", "„umgehen mit“ + Dativ: mit Zeitdruck. Trennbar: gehe … um."] },
+
+{ q: "Wie gehen Sie mit schwierigen Kunden um?", t: "Schwierige Kunden",
+  a: ["Zuerst muss ich …", [E("Zuerst"), V("muss", MOD), S("ich"), R("dem Kunden"), D("zuhören.", INF)]],
+  b: ["Wenn …, bleibe ich …", [K("Wenn"), S("ein Kunde"), R("verärgert"), D("ist"), C, V("bleibe", NACH), S("ich"), R("freundlich und ruhig.")]],
+  w: ["sich entschuldigen für", "Ich entschuldige mich für die Wartezeit und biete eine Lösung an.", "mich für die Wartezeit", "„sich entschuldigen für“ + Akkusativ: für die Wartezeit."] },
+
+{ q: "Erzählen Sie von einem Fehler und was Sie daraus gelernt haben.", t: "Fehler und Lernen",
+  a: ["Damals musste ich …", [E("Damals"), V("musste", MOD), S("ich"), R("meinen Fehler schnell"), D("korrigieren.", INF)]],
+  b: ["Als …, habe ich …", [K("Als"), S("ich"), R("den Fehler"), D("bemerkt habe"), C, V("habe", NACH), S("ich"), R("sofort mein Team"), D("informiert.", PART)]],
+  w: ["lernen aus", "Aus diesem Fehler habe ich viel gelernt.", "Aus diesem Fehler", "„lernen aus“ + Dativ: aus diesem Fehler (m.)."] },
+
+{ q: "Was tun Sie, wenn mehrere Aufgaben gleichzeitig dringend sind?", t: "Mehrere dringende Aufgaben",
+  a: ["Dann kann ich …", [E("Dann"), V("kann", MOD), S("ich"), R("nur eine Aufgabe zuerst"), D("erledigen.", INF)]],
+  b: ["Wenn …, spreche ich …", [K("Wenn"), S("alles"), R("dringend"), D("ist"), C, V("spreche", NACH), S("ich"), R("mit dem Team über die Reihenfolge.")]],
+  w: ["abstimmen mit", "Ich stimme die Reihenfolge mit meiner Führungskraft ab.", "mit meiner Führungskraft", "„abstimmen mit“ + Dativ: mit meiner Führungskraft (f.). Trennbar: stimme … ab."] },
+
+{ q: "Wie koordinieren Sie die Zusammenarbeit zwischen verschiedenen Abteilungen?", t: "Koordination",
+  a: ["Dafür muss ich …", [E("Dafür"), V("muss", MOD), S("ich"), R("alle Beteiligten früh"), D("informieren.", INF)]],
+  b: ["Wenn …, lege ich …", [K("Wenn"), S("mehrere Abteilungen"), R("beteiligt"), D("sind"), C, V("lege", NACH), S("ich"), R("klare Zuständigkeiten"), D("fest.", TREN)]],
+  w: ["sich kümmern um", "Ich kümmere mich um die Termine und um die Kommunikation zwischen den Abteilungen.", "mich um die Termine", "„sich kümmern um“ + Akkusativ: um die Termine."] },
+
+{ q: "Wie schätzen Sie Ihre Deutschkenntnisse ein?", t: "Deutschkenntnisse",
+  a: ["Im Alltag kann ich …", [E("Im Alltag"), V("kann", MOD), S("ich"), R("mich gut"), D("verständigen.", INF)]],
+  b: ["Obwohl …, spreche ich …", [K("Obwohl"), S("ich"), R("fließend"), D("verstehe"), C, V("spreche", NACH), S("ich"), R("manchmal noch langsam.")]],
+  w: ["Fortschritte machen bei", "Ich mache jeden Tag Fortschritte beim Sprechen.", "beim Sprechen", "„bei“ + „dem“ = „beim“. Das Sprechen ist ein Nomen (n.)."] },
+
+/* ===== Woche 3 ===== */
+{ q: "Was haben Sie in Ihrer internationalen Berufserfahrung gelernt?", t: "Internationale Erfahrung",
+  a: ["In … habe ich …", [E("In verschiedenen Ländern"), V("habe", AUX), S("ich"), R("flexibel"), D("gearbeitet.", PART)]],
+  b: ["Ich habe …, die …", [H("Ich habe Kollegen kennengelernt"), C, Rel("die"), R("aus vielen Kulturen"), D("kommen.")]],
+  w: ["sich gewöhnen an", "Ich habe mich schnell an neue Teams gewöhnt.", "an neue Teams", "„sich gewöhnen an“ + Akkusativ: an neue Teams (Pl.)."] },
+
+{ q: "Auf welchen beruflichen Erfolg sind Sie besonders stolz?", t: "Beruflicher Erfolg",
+  a: ["Letztes Jahr habe ich …", [E("Letztes Jahr"), V("habe", AUX), S("ich"), R("einen Prozess"), D("verbessert.", PART)]],
+  b: ["Das war …, der …", [H("Das war ein Prozess"), C, Rel("der"), R("vorher viel Zeit"), D("gekostet hat.")]],
+  w: ["stolz sein auf", "Ich bin stolz auf das Ergebnis und auf die Zusammenarbeit im Team.", "stolz auf das Ergebnis", "„stolz sein auf“ + Akkusativ: auf das Ergebnis."] },
+
+{ q: "Beschreiben Sie eine schwierige Situation, die Sie gelöst haben.", t: "Schwierige Situation",
+  a: ["Vor … habe ich …", [E("Vor zwei Jahren"), V("habe", AUX), S("ich"), R("eine schwierige Situation"), D("gelöst.", PART)]],
+  b: ["Es war …, die …", [H("Es war eine Situation"), C, Rel("die"), R("schnelle Entscheidungen"), D("verlangt hat.")]],
+  w: ["sich entscheiden für", "Ich habe mich für eine klare Lösung entschieden.", "für eine klare Lösung", "„sich entscheiden für“ + Akkusativ: für eine klare Lösung."] },
+
+{ q: "Erzählen Sie von einem Projekt, das Sie koordiniert haben.", t: "Projekt",
+  a: ["Im letzten Projekt habe ich …", [E("Im letzten Projekt"), V("habe", AUX), S("ich"), R("den Zeitplan"), D("koordiniert.", PART)]],
+  b: ["Es war …, das …", [H("Es war ein Projekt"), C, Rel("das"), R("mehrere Abteilungen"), D("betroffen hat.")]],
+  w: ["teilnehmen an", "Mehrere Abteilungen haben an dem Projekt teilgenommen.", "an dem Projekt", "„teilnehmen an“ + Dativ: an dem (am) Projekt. Perfekt: haben … teilgenommen."] },
+
+{ q: "Wie übernehmen Sie Verantwortung?", t: "Verantwortung",
+  a: ["Schon früh habe ich …", [E("Schon früh"), V("habe", AUX), S("ich"), R("Verantwortung"), D("übernommen.", PART)]],
+  b: ["Ich bin jemand, der …", [H("Ich bin jemand"), C, Rel("der"), R("Aufgaben bis zum Ende"), D("begleitet.")]],
+  w: ["Verantwortung tragen für", "Ich trage Verantwortung für die Qualität meiner Arbeit.", "Verantwortung für die Qualität", "„Verantwortung tragen für“ + Akkusativ: für die Qualität (f.)."] },
+
+{ q: "Was haben Sie seit Ihrer letzten Stelle gemacht?", t: "Seit der letzten Stelle",
+  a: ["Seit Februar habe ich …", [E("Seit Februar"), V("habe", AUX), S("ich"), R("mich intensiv"), D("weitergebildet.", PART)]],
+  b: ["Ich habe …, der …", [H("Ich habe einen Kurs besucht"), C, Rel("der"), R("meine Sprachkenntnisse"), D("verbessert hat.")]],
+  w: ["sich vorbereiten auf", "Ich habe mich gezielt auf Gespräche wie dieses vorbereitet.", "mich gezielt auf Gespräche", "„sich vorbereiten auf“ + Akkusativ: auf Gespräche (Pl.)."] },
+
+{ q: "Wie halten Sie Ihr Wissen aktuell?", t: "Weiterbildung",
+  a: ["Zuletzt habe ich …", [E("Zuletzt"), V("habe", AUX), S("ich"), R("einen Online-Kurs"), D("abgeschlossen.", PART)]],
+  b: ["Das ist …, den ich …", [H("Das ist ein Kurs"), C, Rel("den"), S("ich"), R("neben der Arbeit"), D("gemacht habe.")]],
+  w: ["sich informieren über", "Ich informiere mich regelmäßig über neue Entwicklungen.", "mich regelmäßig über neue Entwicklungen", "„sich informieren über“ + Akkusativ: über neue Entwicklungen (Pl.)."] },
+
+/* ===== Woche 4 ===== */
+{ q: "Was motiviert Sie bei der Arbeit?", t: "Motivation",
+  a: ["Mich motiviert es, … zu …", [H("Mich motiviert es"), C, R("Probleme"), Z("zu lösen.")]],
+  b: ["Ich würde gern …", [S("Ich"), V("würde", "würde (Pos. 2)"), R("gern an klaren Zielen"), D("arbeiten.", INF)]],
+  w: ["sich freuen über", "Ich freue mich über positives Feedback und über neue Aufgaben.", "mich über positives Feedback", "„sich freuen über“ + Akkusativ (etwas, das da ist). „sich freuen auf“ gilt für die Zukunft."] },
+
+{ q: "Wo sehen Sie sich in fünf Jahren?", t: "Ziele",
+  a: ["Mein Ziel ist es, … zu …", [H("Mein Ziel ist es"), C, R("in fünf Jahren ein Team"), Z("zu koordinieren.")]],
+  b: ["Ich würde gern …", [S("Ich"), V("würde", "würde (Pos. 2)"), R("gern mehr Verantwortung"), D("übernehmen.", INF)]],
+  w: ["hinarbeiten auf", "Ich arbeite auf eine Koordinationsrolle hin.", "auf eine Koordinationsrolle hin", "„hinarbeiten auf“ + Akkusativ: auf eine Koordinationsrolle (f.). Trennbar: arbeite … hin."] },
+
+{ q: "Wie gehen Sie mit Veränderungen im Unternehmen um?", t: "Veränderungen",
+  a: ["Ich versuche, … zu …", [H("Ich versuche"), C, R("Veränderungen als Chance"), Z("zu sehen.")]],
+  b: ["Ich würde …, was …", [S("Ich"), V("würde", "würde (Pos. 2)"), R("zuerst"), D("nachfragen", INF), C, K("was"), R("sich genau"), D("ändert.")]],
+  w: ["sich einstellen auf", "Ich stelle mich schnell auf neue Abläufe ein.", "mich schnell auf neue Abläufe", "„sich einstellen auf“ + Akkusativ: auf neue Abläufe (Pl.). Trennbar: stelle … ein."] },
+
+{ q: "Wie gehen Sie mit Kritik um?", t: "Kritik und Feedback",
+  a: ["Ich bitte um Feedback, um … zu …", [H("Ich bitte um Feedback"), C, K("um"), R("mich"), Z("zu verbessern.")]],
+  b: ["Ich würde …", [S("Ich"), V("würde", "würde (Pos. 2)"), R("Kritik ernst"), D("nehmen und nachfragen.", INF)]],
+  w: ["reagieren auf", "Ich reagiere ruhig auf Kritik und frage nach Beispielen.", "auf Kritik", "„reagieren auf“ + Akkusativ: auf Kritik. „fragen nach“ + Dativ: nach Beispielen."] },
+
+{ q: "Wie hoch sind Ihre Gehaltsvorstellungen?", t: "Gehalt",
+  a: ["Meine Vorstellung ist es, … zu …", [H("Meine Vorstellung ist es"), C, R("ein faires Gehalt"), Z("zu vereinbaren.")]],
+  b: ["Ich würde gern …", [S("Ich"), V("würde", "würde (Pos. 2)"), R("gern zuerst über die Aufgaben"), D("sprechen.", INF)]],
+  w: ["sich orientieren an", "Ich orientiere mich am üblichen Gehalt für diese Position.", "mich am üblichen Gehalt", "„sich orientieren an“ + Dativ: am (an dem) üblichen Gehalt."] },
+
+{ q: "Wann könnten Sie bei uns anfangen?", t: "Verfügbarkeit",
+  a: ["Ich bin bereit, … zu …", [H("Ich bin bereit"), C, R("sofort"), Z("anzufangen.")]],
+  b: ["Ich könnte …", [S("Ich"), V("könnte", "könnte (Pos. 2)"), R("bereits im Januar bei Ihnen"), D("anfangen.", INF)]],
+  w: ["zur Verfügung stehen", "Ich stehe Ihnen ab Januar zur Verfügung.", "zur Verfügung", "„zur Verfügung stehen“ + Dativ der Person: Ihnen. „zur“ = zu der (f.)."] },
+
+{ q: "Warum sollten wir uns für Sie entscheiden?", t: "Warum Sie",
+  a: ["Mein Vorteil ist es, … zu …", [H("Mein Vorteil ist es"), C, R("schnell Prioritäten"), Z("zu erkennen.")]],
+  b: ["Ich würde …", [S("Ich"), V("würde", "würde (Pos. 2)"), R("Ihr Team mit meiner Erfahrung"), D("unterstützen.", INF)]],
+  w: ["beitragen zu", "Ich kann zu einer guten Zusammenarbeit beitragen.", "zu einer guten Zusammenarbeit", "„beitragen zu“ + Dativ: zu einer guten Zusammenarbeit (f.)."] },
+
+{ q: "Haben Sie noch Fragen an uns?", t: "Eigene Fragen",
+  a: ["Es interessiert mich, … zu …", [H("Es interessiert mich"), C, R("mehr über das Team"), Z("zu erfahren.")]],
+  b: ["Ich würde gern wissen, wie …", [S("Ich"), V("würde", "würde (Pos. 2)"), R("gern"), D("wissen", INF), C, K("wie"), S("die Einarbeitung"), D("abläuft.")]],
+  w: ["sich erkundigen nach", "Ich möchte mich nach den nächsten Schritten erkundigen.", "nach den nächsten Schritten", "„sich erkundigen nach“ + Dativ: nach den nächsten Schritten (Pl.)."] },
+
+{ q: "Möchten Sie noch etwas ergänzen?", t: "Abschluss",
+  a: ["Ich hoffe, … zu …", [H("Ich hoffe"), C, R("bald von Ihnen"), Z("zu hören.")]],
+  b: ["Ich würde mich … freuen", [S("Ich"), V("würde", "würde (Pos. 2)"), R("mich sehr über eine Zusage"), D("freuen.", INF)]],
+  w: ["sich bedanken für", "Ich bedanke mich für das nette Gespräch.", "mich für das nette Gespräch", "„sich bedanken für“ + Akkusativ: für das nette Gespräch."] }
+];
+var TOTAL = DAYS.length;
+
+/* ------------------------------------------------------------------ */
+function weekOf(day) {
+  for (var w = 1; w <= 4; w++) { if (day >= WEEKS[w].von && day <= WEEKS[w].bis) return w; }
+  return 4;
+}
+
+var KEY_DAY = "30day-sprechen-tag", KEY_DONE = "30day-sprechen-erledigt";
+var current = 1, done = {};
+try {
+  var s0 = parseInt(localStorage.getItem(KEY_DAY), 10); if (s0 >= 1 && s0 <= TOTAL) current = s0;
+  done = JSON.parse(localStorage.getItem(KEY_DONE) || "{}") || {};
+} catch (e) {}
+
+var content = document.getElementById("content");
+var cal = document.getElementById("cal");
+var countEl = document.getElementById("count");
+var calBtn = document.getElementById("calBtn");
+var curEl = document.getElementById("cur");
+
+function setCal(open) {
+  cal.hidden = !open;
+  calBtn.setAttribute("aria-expanded", open ? "true" : "false");
+}
+calBtn.addEventListener("click", function (e) { e.stopPropagation(); setCal(cal.hidden); });
+cal.addEventListener("click", function (e) { e.stopPropagation(); });
+document.addEventListener("click", function () { setCal(false); });
+document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !cal.hidden) { setCal(false); calBtn.focus(); } });
+
+function el(tag, cls, text) {
+  var e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  return e;
+}
+
+function fmt(s) { return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0"); }
+
+/* ---------- Kalender ---------- */
+function renderCal() {
+  cal.textContent = "";
+  for (var w = 1; w <= 4; w++) {
+    var row = el("div", "week");
+    row.appendChild(el("span", "wlabel", "W" + w));
+    var days = el("div", "daysrow");
+    for (var d = WEEKS[w].von; d <= WEEKS[w].bis; d++) {
+      (function (n) {
+        var b = el("button", "day" + (n === current ? " now" : "") + (done[n] ? " done" : ""), String(n));
+        b.setAttribute("aria-label", "Tag " + n + (done[n] ? ", erledigt" : ""));
+        if (n === current) b.setAttribute("aria-current", "true");
+        b.addEventListener("click", function () { current = n; setCal(false); render(); });
+        days.appendChild(b);
+      })(d);
+    }
+    row.appendChild(days);
+    cal.appendChild(row);
+  }
+  var n = Object.keys(done).length;
+  countEl.textContent = n + " / " + TOTAL + " Tage";
+  curEl.textContent = "Tag " + current;
+}
+
+/* ---------- Strukturen ---------- */
+function blocks(teile) {
+  var wrap = el("div", "blocks");
+  teile.forEach(function (t) {
+    if (t[1] === ",") { wrap.appendChild(el("span", "comma", ",")); return; }
+    var b = el("div", "block");
+    b.appendChild(el("span", "chip t-" + t[1], t[0]));
+    b.appendChild(el("span", "label", t[2] || LABELS[t[1]]));
+    wrap.appendChild(b);
+  });
+  return wrap;
+}
+
+function satzCard(name, titel, regel, s) {
+  var c = el("section", "card");
+  var head = el("div", "card-head");
+  head.appendChild(el("span", "card-name", name));
+  head.appendChild(el("span", "pattern", s[0]));
+  c.appendChild(head);
+  c.appendChild(el("p", "stitle", titel));
+  c.appendChild(blocks(s[1]));
+  c.appendChild(el("p", "rule", regel));
+  return c;
+}
+
+function wortCard(w) {
+  var c = el("section", "card");
+  var head = el("div", "card-head");
+  head.appendChild(el("span", "card-name", "Wortverbindung"));
+  head.appendChild(el("span", "pattern", w[0]));
+  c.appendChild(head);
+  var p = el("p", "example");
+  var idx = w[1].indexOf(w[2]);
+  if (idx >= 0) {
+    p.appendChild(document.createTextNode(w[1].slice(0, idx)));
+    p.appendChild(el("mark", "", w[2]));
+    p.appendChild(document.createTextNode(w[1].slice(idx + w[2].length)));
+  } else { p.textContent = w[1]; }
+  c.appendChild(p);
+  c.appendChild(el("p", "rule", w[3]));
+  return c;
+}
+
+/* ---------- Aufnahme ---------- */
+var BEEPS = 3;                 /* Anzahl Pieptöne vor dem Start und am Ende */
+var stream = null, recorder = null, chunks = [], tick = null, lastUrl = null;
+var audioCtx = null, beepTimers = [], beepOscs = [], minutes = 1, phase = "idle", timeUp = false;
+
+function getCtx() {
+  var AC = window.AudioContext || window.webkitAudioContext;
+  if (!AC) return null;
+  if (!audioCtx) audioCtx = new AC();
+  if (audioCtx.state === "suspended") audioCtx.resume();
+  return audioCtx;
+}
+
+function beeps(n, cb) {
+  var c = getCtx(), gap = 0.75;
+  if (!c) { beepTimers.push(setTimeout(cb, 400)); return; }
+  var t0 = c.currentTime + 0.05;
+  for (var i = 0; i < n; i++) {
+    var t = t0 + i * gap, o = c.createOscillator(), g = c.createGain();
+    o.type = "sine"; o.frequency.value = 880;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.5, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.2);
+    o.connect(g); g.connect(c.destination);
+    o.start(t); o.stop(t + 0.22);
+    beepOscs.push(o);
+  }
+  beepTimers.push(setTimeout(cb, ((n - 1) * gap + 0.9) * 1000));
+}
+
+function stopBeeps() {
+  beepTimers.forEach(clearTimeout); beepTimers = [];
+  beepOscs.forEach(function (o) { try { o.stop(); } catch (e) {} }); beepOscs = [];
+}
+
+function stopRec(silent) {
+  clearInterval(tick); tick = null;
+  stopBeeps();
+  if (recorder && recorder.state !== "inactive") { if (silent) recorder.onstop = null; recorder.stop(); }
+  if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
+  if (silent) recorder = null;
+  phase = "idle";
+}
+
+function recorderPanel() {
+  var box = el("section", "rec");
+  var row = el("div", "rec-row");
+  var timer = el("div", "timer", fmt(minutes * 60));
+  var btn = el("button", "");
+  btn.id = "recBtn";
+  btn.appendChild(el("span", "dot"));
+  var btnText = el("span", "", "Aufnehmen");
+  btn.appendChild(btnText);
+
+  var dur = el("div", "dur");
+  dur.appendChild(el("span", "dur-label", "Dauer"));
+  var seg = el("div", "seg");
+  var segBtns = [];
+  for (var m = 1; m <= 5; m++) {
+    (function (mm) {
+      var b = el("button", "", String(mm));
+      b.setAttribute("aria-pressed", mm === minutes ? "true" : "false");
+      b.setAttribute("aria-label", mm + (mm === 1 ? " Minute" : " Minuten"));
+      b.addEventListener("click", function () {
+        if (phase !== "idle") return;
+        minutes = mm;
+        segBtns.forEach(function (x, i) { x.setAttribute("aria-pressed", i + 1 === minutes ? "true" : "false"); });
+        timer.textContent = fmt(minutes * 60);
+        if (audio.hidden) msg.textContent = startMsg();
+      });
+      seg.appendChild(b); segBtns.push(b);
+    })(m);
+  }
+  dur.appendChild(seg);
+  dur.appendChild(el("span", "dur-label", "min"));
+
+  function startMsg() {
+    return "Sprich " + (minutes === 1 ? "1 Minute" : minutes + " Minuten") + " zum Thema. Vor dem Start und am Ende piept es " + BEEPS + "-mal.";
+  }
+  var msg = el("p", "msg", startMsg());
+  var audio = document.createElement("audio");
+  audio.controls = true; audio.hidden = true;
+  row.appendChild(timer); row.appendChild(btn);
+  box.appendChild(row); box.appendChild(dur); box.appendChild(msg); box.appendChild(audio);
+
+  function lock(on) { segBtns.forEach(function (b) { b.disabled = on; }); }
+
+  function idle(text) {
+    phase = "idle";
+    btn.classList.remove("live"); timer.classList.remove("live");
+    btnText.textContent = audio.hidden ? "Aufnehmen" : "Neu aufnehmen";
+    lock(false);
+    if (text) { msg.textContent = text; msg.className = "msg"; }
+  }
+
+  function beginRecording() {
+    var limit = minutes * 60;
+    chunks = [];
+    recorder = new MediaRecorder(stream);
+    recorder.ondataavailable = function (e) { if (e.data.size) chunks.push(e.data); };
+    recorder.onstop = function () {
+      var blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
+      if (lastUrl) URL.revokeObjectURL(lastUrl);
+      lastUrl = URL.createObjectURL(blob);
+      audio.src = lastUrl; audio.hidden = false;
+      var over = timeUp; timeUp = false;
+      idle(over ? "Zeit ist um. Hör dir deine Aufnahme an." : "Hör dir deine Aufnahme an.");
+      if (over) beeps(BEEPS, function () {});
+      done[current] = true;
+      try { localStorage.setItem(KEY_DONE, JSON.stringify(done)); } catch (e) {}
+      renderCal();
+    };
+    recorder.start();
+    phase = "recording";
+    var left = limit;
+    timer.textContent = fmt(left);
+    timer.classList.add("live");
+    btnText.textContent = "Stopp";
+    msg.textContent = "Aufnahme läuft …"; msg.className = "msg";
+    tick = setInterval(function () {
+      left -= 1; timer.textContent = fmt(left);
+      if (left <= 0) { timeUp = true; stopRec(false); }
+    }, 1000);
+  }
+
+  function start() {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof MediaRecorder === "undefined") {
+      msg.textContent = "Dieser Browser kann nicht aufnehmen. Öffne die Datei in Chrome oder Safari.";
+      msg.className = "msg err"; return;
+    }
+    getCtx();                       /* im Klick starten, damit der Browser Töne erlaubt */
+    phase = "starting"; lock(true);
+    navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) {
+      if (phase !== "starting") { s.getTracks().forEach(function (t) { t.stop(); }); return; }
+      stream = s; phase = "countdown";
+      audio.hidden = true;
+      btn.classList.add("live");
+      btnText.textContent = "Abbrechen";
+      timer.textContent = fmt(minutes * 60);
+      msg.textContent = "Gleich geht’s los … " + BEEPS + " Pieptöne"; msg.className = "msg";
+      beeps(BEEPS, function () { if (phase === "countdown") beginRecording(); });
+    }).catch(function () {
+      idle();
+      msg.textContent = "Kein Zugriff auf das Mikrofon. Erlaube es in der Adressleiste des Browsers und versuche es erneut.";
+      msg.className = "msg err";
+    });
+  }
+
+  btn.addEventListener("click", function () {
+    if (phase === "recording") { stopRec(false); }
+    else if (phase === "countdown" || phase === "starting") {
+      stopRec(true); idle(startMsg());
+      timer.textContent = fmt(minutes * 60);
+    }
+    else { start(); }
+  });
+  return box;
+}
+
+/* ---------- Anzeige ---------- */
+function render() {
+  stopRec(true);
+  try { localStorage.setItem(KEY_DAY, String(current)); } catch (e) {}
+  renderCal();
+  content.textContent = "";
+  var d = DAYS[current - 1];
+  var wk = weekOf(current), W = WEEKS[wk];
+
+  var head = el("div");
+  head.appendChild(el("p", "eyebrow", "Tag " + current + " · Woche " + wk));
+  head.appendChild(el("p", "thema", "Thema: " + d.t));
+  head.appendChild(el("h1", "", d.q));
+  content.appendChild(head);
+
+  var structs = el("div", "structs");
+  structs.appendChild(satzCard("Satz A", W.titelA, W.regelA, d.a));
+  structs.appendChild(satzCard("Satz B", W.titelB, W.regelB, d.b));
+  structs.appendChild(wortCard(d.w));
+  content.appendChild(structs);
+
+  content.appendChild(recorderPanel());
+}
+
+render();
+</script>
+</body>
+</html>
