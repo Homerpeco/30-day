@@ -1,0 +1,16 @@
+{
+  "name": "thirty-day",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "30-DAY – Besser sprechen in 30 Tagen. Static speaking studio plus sync, transcription and voice endpoints on Vercel.",
+  "scripts": {
+    "test": "node tests/data-test.mjs && node tests/api-test.mjs"
+  },
+  "dependencies": {
+    "@vercel/blob": "2.8.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
